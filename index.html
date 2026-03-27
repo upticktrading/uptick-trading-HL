@@ -488,6 +488,120 @@
     .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .page-btn.active { background: #4ade80; color: #0b0f17; border-color: #4ade80; }
 
+    /* ── TABS ──────────────────────────────────────────────── */
+    .tab-nav {
+      display: flex;
+      gap: 4px;
+      padding: 0 32px;
+      background: #111827;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .tab-btn {
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: #e2e8f0; }
+
+    .tab-btn.active {
+      color: #fff;
+      border-bottom-color: #4ade80;
+    }
+
+    .tab-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    .tab-icon.hl  { background: linear-gradient(135deg, #4ade80, #22d3ee); }
+    .tab-icon.drv { background: linear-gradient(135deg, #a78bfa, #818cf8); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── DERIVE SECTION ─────────────────────────────────────── */
+    .api-pending-banner {
+      background: #1a1a2e;
+      border: 1px solid #312e81;
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+      color: #a5b4fc;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .derive-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .derive-card {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 20px 22px;
+      transition: border-color 0.2s;
+    }
+
+    .derive-card:hover { border-color: #334155; }
+
+    /* Options table specifics */
+    .option-type-call {
+      background: #052e16;
+      color: #4ade80;
+      border: 1px solid #166534;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .option-type-put {
+      background: #2d0a0a;
+      color: #f87171;
+      border: 1px solid #7f1d1d;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .expiry-badge {
+      background: #1e293b;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .placeholder-blur {
+      filter: blur(5px);
+      user-select: none;
+      opacity: 0.5;
+    }
+
     /* ── FOOTER ────────────────────────────────────────────── */
     footer {
       text-align: center;
@@ -501,21 +615,27 @@
 </head>
 <body>
 
+<!-- Load ethers.js for Derive request signing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+
 <!-- ════════════════════════════════════════════════════════
-     ⚙️  CONFIG  —  change your wallet address below
+     ⚙️  CONFIG  —  change your wallet addresses below
 ═════════════════════════════════════════════════════════════ -->
 <script>
-  // ▶ Your Hyperliquid wallet address
-  const WALLET_ADDRESS = "0xeec5bC1998167969E3062E32Eb7479c89D7B801D";
-
-  // ▶ Auto-refresh interval in seconds. Set to 0 to disable.
+  // ── HYPERLIQUID ──────────────────────────────────────────
+  const WALLET_ADDRESS     = "0xeec5bC1998167969E3062E32Eb7479c89D7B801D";
   const AUTO_REFRESH_SECONDS = 60;
+  const COIN_ALIASES = { "@107": "HYPE" };
 
-  // ▶ Coin name aliases — map internal IDs to readable names
-  const COIN_ALIASES = {
-    "@107": "HYPE",
-    // Add more here, e.g.: "@1": "SOMECOIN"
-  };
+  // ── DERIVE ───────────────────────────────────────────────
+  // 1. Go to app.derive.xyz → Home → Developers → "Derive Wallet"
+  //    and paste your Derive smart-contract wallet address here:
+  const DERIVE_WALLET = "0x05ff9916992e9321F9e8f6c8148F561D7CB25378";
+
+  // 2. Read-only session key private key:
+  const DERIVE_SESSION_PRIVATE_KEY = "0xacd00ff0b9805bc9395290ddbee9a87f2ba0916f2f3e232f6eb7f0d47e92f75d";
+
+  const DERIVE_API = "https://api.derive.xyz";
 </script>
 <!-- ════════════════════════════════════════════════════════ -->
 
@@ -554,8 +674,25 @@
   </div>
 </header>
 
+<!-- ── TAB NAVIGATION ─────────────────────────────────────── -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('hl')">
+    <span class="tab-icon hl">⚡</span>
+    Hyperliquid
+  </button>
+  <button class="tab-btn" onclick="switchTab('drv')">
+    <span class="tab-icon drv">◈</span>
+    Derive.xyz
+  </button>
+</nav>
+
 <main>
   <div id="error-banner"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+       HYPERLIQUID TAB
+  ══════════════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-hl">
 
   <!-- ── STAT CARDS ──────────────────────────────────────── -->
   <div class="cards">
@@ -657,6 +794,90 @@
     </table>
     <div class="pagination" id="pagination"></div>
   </div>
+  </div> <!-- /tab-hl -->
+
+  <!-- ══════════════════════════════════════════════════════
+       DERIVE TAB
+  ══════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-drv">
+
+    <!-- Status banner -->
+    <div class="api-pending-banner" id="derive-banner">
+      ⏳ &nbsp;<strong>Session key not yet configured</strong> — paste your Derive wallet + session private key in the config at the top of the file to go live.
+    </div>
+
+    <!-- ── DERIVE STAT CARDS ──────────────────────────────── -->
+    <div class="derive-cards">
+      <div class="derive-card">
+        <div class="card-label">Total Wallet Value</div>
+        <div class="card-value placeholder-blur" id="d-total-value">$—</div>
+        <div class="card-sub">Options + collateral</div>
+      </div>
+      <div class="derive-card">
+        <div class="card-label">Available Margin</div>
+        <div class="card-value placeholder-blur" id="d-avail-margin">$—</div>
+        <div class="card-sub">Free collateral</div>
+      </div>
+      <div class="derive-card">
+        <div class="card-label">Options Value</div>
+        <div class="card-value placeholder-blur" id="d-options-value">$—</div>
+        <div class="card-sub">Mark value of open positions</div>
+      </div>
+      <div class="derive-card">
+        <div class="card-label">Unrealized PnL</div>
+        <div class="card-value placeholder-blur" id="d-unrealized-pnl">$—</div>
+        <div class="card-sub">Open options positions</div>
+      </div>
+      <div class="derive-card">
+        <div class="card-label">Open Positions</div>
+        <div class="card-value placeholder-blur" id="d-open-count">—</div>
+        <div class="card-sub">Active options contracts</div>
+      </div>
+      <div class="derive-card">
+        <div class="card-label">Net Delta</div>
+        <div class="card-value placeholder-blur" id="d-net-delta">—</div>
+        <div class="card-sub">Portfolio delta exposure</div>
+      </div>
+    </div>
+
+    <!-- ── OPEN OPTIONS POSITIONS ─────────────────────────── -->
+    <div class="section-header">
+      <div class="section-title">
+        <div class="dot" style="background:#a78bfa"></div>
+        Open Options Positions
+        <span class="count-badge">6</span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Instrument</th>
+            <th>Type</th>
+            <th>Expiry</th>
+            <th style="text-align:right">Strike</th>
+            <th style="text-align:right">Size</th>
+            <th style="text-align:right">Mark Price</th>
+            <th style="text-align:right">Entry Price</th>
+            <th style="text-align:right">Unrealized PnL</th>
+            <th style="text-align:right">Delta</th>
+          </tr>
+        </thead>
+        <tbody id="derive-positions-body">
+          <tr>
+            <td colspan="9">
+              <div class="table-placeholder">
+                Configure your Derive session key in the config to see live positions.
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div> <!-- /tab-drv -->
+
 </main>
 
 <footer>
@@ -664,6 +885,156 @@
 </footer>
 
 <script>
+  // ═══════════════════════════════════════════════════════════
+  //  TAB SWITCHING
+  // ═══════════════════════════════════════════════════════════
+  function switchTab(id) {
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById("tab-" + id).classList.add("active");
+    event.currentTarget.classList.add("active");
+    if (id === "drv") loadDerive();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  DERIVE — AUTH + API
+  // ═══════════════════════════════════════════════════════════
+  const DERIVE_READY = (
+    DERIVE_WALLET !== "PASTE_DERIVE_WALLET_HERE" &&
+    DERIVE_SESSION_PRIVATE_KEY !== "PASTE_SESSION_PRIVATE_KEY_HERE"
+  );
+
+  // Build signed auth headers using the session key private key
+  async function deriveAuthHeaders() {
+    const wallet    = new ethers.Wallet(DERIVE_SESSION_PRIVATE_KEY);
+    const timestamp = Date.now().toString();
+    const signature = await wallet.signMessage(timestamp);
+    return {
+      "Content-Type":    "application/json",
+      "X-LyraWallet":    DERIVE_WALLET,
+      "X-LyraTimestamp": timestamp,
+      "X-LyraSignature": signature,
+    };
+  }
+
+  async function derivePost(path, body = {}) {
+    const headers = await deriveAuthHeaders();
+    const res = await fetch(DERIVE_API + path, {
+      method:  "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`Derive HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function loadDerive() {
+    const banner = document.getElementById("derive-banner");
+
+    if (!DERIVE_READY) {
+      banner.innerHTML = "⏳ &nbsp;<strong>Session key not yet configured</strong> — paste your Derive wallet + session private key in the config to go live.";
+      return;
+    }
+
+    banner.innerHTML = "🔄 &nbsp;Loading live Derive data…";
+
+    try {
+      // Get all portfolios (wallet value, margin)
+      const portfolioRes = await derivePost("/private/get_all_portfolios");
+      const portfolios   = portfolioRes.result?.portfolios || [];
+      const portfolio    = portfolios[0] || {};
+
+      const totalValue    = parseFloat(portfolio.total_value        || 0);
+      const availMargin   = parseFloat(portfolio.available_margin   || 0);
+      const optionsValue  = parseFloat(portfolio.options_value      || 0);
+      const unrealPnl     = parseFloat(portfolio.unrealized_pnl     || 0);
+      const netDelta      = parseFloat(portfolio.net_delta          || 0);
+
+      // Get open positions
+      const posRes    = await derivePost("/private/get_positions");
+      const positions = posRes.result?.positions || [];
+
+      // Update stat cards
+      const dSet = (id, val, cls = "") => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = val;
+        el.className   = "card-value" + (cls ? " " + cls : "");
+        el.classList.remove("placeholder-blur");
+      };
+
+      dSet("d-total-value",   fmtUSD(totalValue));
+      dSet("d-avail-margin",  fmtUSD(availMargin));
+      dSet("d-options-value", fmtUSD(optionsValue));
+      dSet("d-unrealized-pnl",
+        (unrealPnl >= 0 ? "+" : "") + fmtUSD(unrealPnl),
+        unrealPnl >= 0 ? "positive" : "negative"
+      );
+      dSet("d-open-count",  positions.length.toString());
+      dSet("d-net-delta",   (netDelta >= 0 ? "+" : "") + fmt(netDelta, 3));
+
+      // Render positions table
+      renderDerivePositions(positions);
+
+      banner.innerHTML = "✅ &nbsp;<strong>Live data</strong> — Derive.xyz connected.";
+      banner.style.borderColor = "#166534";
+      banner.style.background  = "#052e16";
+      banner.style.color       = "#4ade80";
+
+    } catch (err) {
+      console.error("Derive error:", err);
+      banner.innerHTML = "⚠ &nbsp;<strong>Derive API error:</strong> " + err.message;
+      banner.style.borderColor = "#7f1d1d";
+      banner.style.background  = "#1f1015";
+      banner.style.color       = "#fca5a5";
+    }
+  }
+
+  function renderDerivePositions(positions) {
+    const tbody = document.getElementById("derive-positions-body");
+    if (!positions.length) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="table-placeholder">No open positions found.</div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = positions.map(p => {
+      const instrument = p.instrument_name || "—";
+      const isCall     = instrument.includes("-C");
+      const isPut      = instrument.includes("-P");
+      const typeBadge  = isCall
+        ? `<span class="option-type-call">CALL</span>`
+        : isPut
+          ? `<span class="option-type-put">PUT</span>`
+          : `<span class="expiry-badge">${p.instrument_type || "—"}</span>`;
+
+      // Parse expiry and strike from instrument name e.g. BTC-28MAR25-70000-C
+      const parts  = instrument.split("-");
+      const expiry = parts[1] || "—";
+      const strike = parts[2] ? "$" + parseInt(parts[2]).toLocaleString("en-US") : "—";
+
+      const size      = parseFloat(p.amount        || 0);
+      const markPx    = parseFloat(p.mark_price    || 0);
+      const entryPx   = parseFloat(p.average_price || 0);
+      const upnl      = parseFloat(p.unrealized_pnl|| 0);
+      const delta     = parseFloat(p.delta         || 0);
+
+      const pnlCls  = upnl > 0 ? "positive" : upnl < 0 ? "negative" : "";
+      const pnlStr  = upnl === 0 ? "—" : (upnl > 0 ? "+" : "") + fmtUSD(upnl);
+
+      return `<tr>
+        <td><span class="coin-badge">${instrument}</span></td>
+        <td>${typeBadge}</td>
+        <td><span class="expiry-badge">${expiry}</span></td>
+        <td style="text-align:right">${strike}</td>
+        <td style="text-align:right">${fmt(size, 4)}</td>
+        <td style="text-align:right">${fmtUSD(markPx)}</td>
+        <td style="text-align:right">${fmtUSD(entryPx)}</td>
+        <td style="text-align:right" class="${pnlCls}">${pnlStr}</td>
+        <td style="text-align:right">${(delta >= 0 ? "+" : "") + fmt(delta, 3)}</td>
+      </tr>`;
+    }).join("");
+  }
+
   // ═══════════════════════════════════════════════════════════
   //  PASSWORD GATE
   // ═══════════════════════════════════════════════════════════
