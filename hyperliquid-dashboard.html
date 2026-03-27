@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uptick Capital Trading</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0b0f17;
+      color: #e2e8f0;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN OVERLAY ─────────────────────────────────────── */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: #0b0f17;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .login-box {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      padding: 40px 44px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .login-logo {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #4ade80, #22d3ee);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin: 0 auto 18px;
+    }
+
+    .login-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .login-sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+
+    .login-input {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 12px;
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s;
+    }
+
+    .login-input:focus { border-color: #4ade80; }
+    .login-input.error { border-color: #f87171; }
+
+    .login-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #4ade80, #22d3ee);
+      color: #0b0f17;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .login-btn:hover { opacity: 0.88; }
+
+    .login-error {
+      font-size: 12px;
+      color: #f87171;
+      margin-top: 10px;
+      min-height: 16px;
+    }
+
+    /* ── HEADER ────────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1e293b;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #4ade80, #22d3ee);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .wallet-badge {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #94a3b8;
+      font-family: 'Courier New', monospace;
+    }
+
+    .wallet-badge span { color: #4ade80; }
+
+    .last-updated { font-size: 12px; color: #64748b; }
+
+    .btn-refresh {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 7px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-refresh:hover { background: #334155; border-color: #4ade80; }
+    .btn-refresh.loading { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── MAIN ──────────────────────────────────────────────── */
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+
+    /* ── ERROR BANNER ──────────────────────────────────────── */
+    #error-banner {
+      display: none;
+      background: #1f1015;
+      border: 1px solid #7f1d1d;
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      color: #fca5a5;
+      font-size: 14px;
+    }
+
+    /* ── STAT CARDS ────────────────────────────────────────── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 20px 22px;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: #334155; }
+
+    .card-label {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .card-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .positive { color: #4ade80 !important; }
+    .negative { color: #f87171 !important; }
+
+    /* ── SECTION HEADER ─────────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+
+    /* ── TOP 3 TRADES ───────────────────────────────────────── */
+    .top3-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .top3-card {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .top3-card:hover {
+      border-color: #334155;
+      transform: translateY(-1px);
+    }
+
+    .top3-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .top3-card.rank-1::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+    .top3-card.rank-2::before { background: linear-gradient(90deg, #94a3b8, #64748b); }
+    .top3-card.rank-3::before { background: linear-gradient(90deg, #b45309, #92400e); }
+
+    .top3-rank {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .rank-1 .top3-rank { color: #fbbf24; }
+    .rank-2 .top3-rank { color: #94a3b8; }
+    .rank-3 .top3-rank { color: #b45309; }
+
+    .top3-coin-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .top3-pnl {
+      font-size: 28px;
+      font-weight: 800;
+      color: #4ade80;
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+    }
+
+    .top3-meta {
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .top3-empty {
+      background: #111827;
+      border: 1px dashed #1e293b;
+      border-radius: 12px;
+      padding: 40px 22px;
+      text-align: center;
+      color: #334155;
+      font-size: 13px;
+    }
+
+    /* ── FILTERS ───────────────────────────────────────────── */
+    .filters {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-input {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 13px;
+      outline: none;
+      width: 160px;
+    }
+
+    .filter-input::placeholder { color: #475569; }
+    .filter-input:focus { border-color: #4ade80; }
+
+    .filter-select {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .count-badge {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 12px;
+    }
+
+    /* ── TABLE ─────────────────────────────────────────────── */
+    .table-wrap {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    thead { background: #0f172a; }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #64748b;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover { color: #94a3b8; }
+    th.sort-asc::after  { content: ' ↑'; color: #4ade80; }
+    th.sort-desc::after { content: ' ↓'; color: #4ade80; }
+
+    td {
+      padding: 11px 16px;
+      border-top: 1px solid #1a2235;
+      white-space: nowrap;
+      color: #cbd5e1;
+    }
+
+    tr:hover td { background: #13202f; }
+
+    .side-buy  { color: #4ade80; font-weight: 600; }
+    .side-sell { color: #f87171; font-weight: 600; }
+
+    .coin-badge {
+      background: #1e293b;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .dir-badge {
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .dir-long  { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+    .dir-short { background: #2d0a0a; color: #f87171; border: 1px solid #7f1d1d; }
+
+    /* ── EMPTY / LOADING ───────────────────────────────────── */
+    .table-placeholder {
+      padding: 60px 20px;
+      text-align: center;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #1e293b;
+      border-top-color: #4ade80;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── PAGINATION ────────────────────────────────────────── */
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px;
+      border-top: 1px solid #1e293b;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .page-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+
+    .page-btn:hover:not(:disabled) { border-color: #4ade80; color: #4ade80; }
+    .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .page-btn.active { background: #4ade80; color: #0b0f17; border-color: #4ade80; }
+
+    /* ── FOOTER ────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #334155;
+      font-size: 12px;
+      border-top: 1px solid #1e293b;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     ⚙️  CONFIG  —  change your wallet address below
+═════════════════════════════════════════════════════════════ -->
+<script>
+  // ▶ Your Hyperliquid wallet address
+  const WALLET_ADDRESS = "0xeec5bC1998167969E3062E32Eb7479c89D7B801D";
+
+  // ▶ Auto-refresh interval in seconds. Set to 0 to disable.
+  const AUTO_REFRESH_SECONDS = 60;
+
+  // ▶ Coin name aliases — map internal IDs to readable names
+  const COIN_ALIASES = {
+    "@107": "HYPE",
+    // Add more here, e.g.: "@1": "SOMECOIN"
+  };
+</script>
+<!-- ════════════════════════════════════════════════════════ -->
+
+<!-- ── LOGIN OVERLAY ──────────────────────────────────────── -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">⚡</div>
+    <div class="login-title">Uptick Capital Trading</div>
+    <div class="login-sub">Enter your password to continue</div>
+    <input
+      class="login-input"
+      id="login-input"
+      type="password"
+      placeholder="Password"
+      onkeydown="if(event.key==='Enter') checkLogin()"
+      autocomplete="current-password"
+    />
+    <button class="login-btn" onclick="checkLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    Uptick Capital Trading
+  </div>
+  <div class="header-right">
+    <div class="wallet-badge">
+      Wallet: <span id="walletShort">—</span>
+    </div>
+    <div class="last-updated" id="lastUpdated">Not yet loaded</div>
+    <button class="btn-refresh" id="refreshBtn" onclick="loadAll()">
+      <span id="refreshIcon">↻</span> Refresh
+    </button>
+  </div>
+</header>
+
+<main>
+  <div id="error-banner"></div>
+
+  <!-- ── STAT CARDS ──────────────────────────────────────── -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Perps Account Value</div>
+      <div class="card-value" id="accountValue">—</div>
+      <div class="card-sub">Perpetuals portfolio value</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Spot Account Value</div>
+      <div class="card-value" id="spotValue">—</div>
+      <div class="card-sub">Spot balances incl. open positions</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Margin Used</div>
+      <div class="card-value" id="marginUsed">—</div>
+      <div class="card-sub">Total margin in use</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Realized Spot PnL</div>
+      <div class="card-value" id="totalPnl">—</div>
+      <div class="card-sub">From spot trade history</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Trades</div>
+      <div class="card-value" id="totalTrades">—</div>
+      <div class="card-sub">Number of fills</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Win Rate</div>
+      <div class="card-value" id="winRate">—</div>
+      <div class="card-sub">% profitable trades</div>
+    </div>
+  </div>
+
+  <!-- ── BEST TOP 3 TRADES ───────────────────────────────── -->
+  <div class="section-header" style="margin-bottom:14px">
+    <div class="section-title">
+      <div class="dot" style="background:#fbbf24"></div>
+      Best Realized Trades
+    </div>
+  </div>
+  <div class="top3-grid" id="top3Grid">
+    <div class="top3-empty">Loading top trades…</div>
+  </div>
+
+  <!-- ── TRADE HISTORY ───────────────────────────────────── -->
+  <div class="section-header">
+    <div class="section-title">
+      <div class="dot"></div>
+      Trade History
+      <span class="count-badge" id="tradeCount">0</span>
+    </div>
+    <div class="filters">
+      <input
+        class="filter-input"
+        id="searchInput"
+        type="text"
+        placeholder="Search by coin..."
+        oninput="applyFilters()"
+      />
+      <select class="filter-select" id="sideFilter" onchange="applyFilters()">
+        <option value="">All sides</option>
+        <option value="B">Buy</option>
+        <option value="A">Sell</option>
+      </select>
+      <select class="filter-select" id="limitSelect" onchange="applyFilters()">
+        <option value="25">25 / page</option>
+        <option value="50">50 / page</option>
+        <option value="100">100 / page</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortTable('time')">Time</th>
+          <th onclick="sortTable('coin')">Coin</th>
+          <th onclick="sortTable('dir')">Direction</th>
+          <th onclick="sortTable('side')">Side</th>
+          <th onclick="sortTable('sz')" style="text-align:right">Size</th>
+          <th onclick="sortTable('px')" style="text-align:right">Price</th>
+          <th onclick="sortTable('closedPnl')" style="text-align:right">Closed PnL</th>
+          <th onclick="sortTable('fee')" style="text-align:right">Fee</th>
+        </tr>
+      </thead>
+      <tbody id="tradeTableBody">
+        <tr>
+          <td colspan="8">
+            <div class="table-placeholder">
+              <div class="spinner"></div>
+              Loading dashboard…
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</main>
+
+<footer>
+  Data via Hyperliquid public API &nbsp;·&nbsp; Uptick Capital
+</footer>
+
+<script>
+  // ═══════════════════════════════════════════════════════════
+  //  PASSWORD GATE
+  // ═══════════════════════════════════════════════════════════
+  const PASSWORD = "Investor-login-UTC";
+
+  function checkLogin() {
+    const input = document.getElementById("login-input");
+    const error = document.getElementById("login-error");
+    if (input.value === PASSWORD) {
+      document.getElementById("login-overlay").style.display = "none";
+      input.classList.remove("error");
+      error.textContent = "";
+      loadAll();
+    } else {
+      input.classList.add("error");
+      error.textContent = "Incorrect password. Please try again.";
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  // Focus input on load
+  window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("login-input").focus();
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  //  STATE
+  // ═══════════════════════════════════════════════════════════
+  const API = "https://api.hyperliquid.xyz/info";
+  let allFills    = [];
+  let filtered    = [];
+  let sortKey     = "time";
+  let sortDir     = "desc";
+  let currentPage = 1;
+
+  // ═══════════════════════════════════════════════════════════
+  //  HELPERS
+  // ═══════════════════════════════════════════════════════════
+  function displayCoin(coin) {
+    return COIN_ALIASES[coin] || coin;
+  }
+
+  // Spot fills have a coin that starts with "@" (internal token IDs)
+  function isSpotFill(fill) {
+    return fill.coin && fill.coin.startsWith("@");
+  }
+
+  const fmt = (n, dec = 2) =>
+    parseFloat(n || 0).toLocaleString("en-US", {
+      minimumFractionDigits: dec,
+      maximumFractionDigits: dec,
+    });
+
+  const fmtUSD = (n) => "$" + fmt(n, 2);
+
+  const fmtDate = (ms) => {
+    const d = new Date(ms);
+    return d.toLocaleDateString("en-US") + " " +
+      d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  };
+
+  const fmtDateShort = (ms) => {
+    const d = new Date(ms);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  function shortAddr(addr) {
+    if (!addr || addr.length < 10) return addr;
+    return addr.slice(0, 6) + "…" + addr.slice(-4);
+  }
+
+  function setEl(id, val, cls = "") {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    el.className   = "card-value" + (cls ? " " + cls : "");
+  }
+
+  function showError(msg) {
+    const b = document.getElementById("error-banner");
+    b.textContent = "⚠ " + msg;
+    b.style.display = "block";
+  }
+
+  function clearError() {
+    const b = document.getElementById("error-banner");
+    b.textContent = "";
+    b.style.display = "none";
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  API CALLS
+  // ═══════════════════════════════════════════════════════════
+  async function postHL(body) {
+    const res = await fetch(API, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  const fetchPerpState  = () => postHL({ type: "clearinghouseState", user: WALLET_ADDRESS });
+  const fetchSpotState  = () => postHL({ type: "spotClearinghouseState", user: WALLET_ADDRESS });
+  const fetchAllMids    = () => postHL({ type: "allMids" });
+  const fetchFills      = () => postHL({ type: "userFills", user: WALLET_ADDRESS });
+
+  // ═══════════════════════════════════════════════════════════
+  //  SPOT ACCOUNT VALUE
+  // ═══════════════════════════════════════════════════════════
+  function calcSpotValue(spotState, mids) {
+    const balances = spotState.balances || [];
+    let total = 0;
+    for (const b of balances) {
+      const amount = parseFloat(b.total || 0);
+      if (amount === 0) continue;
+      if (b.coin === "USDC" || b.coin === "USDT") {
+        total += amount;
+      } else {
+        // Spot prices in allMids are keyed as "@{tokenIndex}"
+        const tokenKey = "@" + b.token;
+        const price = parseFloat(mids[tokenKey] || mids[b.coin] || 0);
+        total += amount * price;
+      }
+    }
+    return total;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  RENDER STATS
+  // ═══════════════════════════════════════════════════════════
+  function renderStats(perpState, spotState, mids, fills) {
+    // Perps
+    const ms     = perpState.marginSummary || {};
+    const acct   = parseFloat(ms.accountValue || 0);
+    const margin = parseFloat(ms.totalMarginUsed || 0);
+
+    // Spot account value
+    const spotVal = calcSpotValue(spotState, mids);
+
+    // Realized Spot PnL — only from spot fills (@-prefixed coins)
+    const spotFills  = fills.filter(isSpotFill);
+    const spotPnl    = spotFills.reduce((s, f) => s + parseFloat(f.closedPnl || 0), 0);
+
+    // Win rate across all fills
+    const wins    = fills.filter(f => parseFloat(f.closedPnl || 0) > 0).length;
+    const withPnl = fills.filter(f => parseFloat(f.closedPnl || 0) !== 0).length;
+    const winRate = withPnl > 0 ? (wins / withPnl) * 100 : 0;
+
+    setEl("accountValue", fmtUSD(acct));
+    setEl("spotValue",    fmtUSD(spotVal));
+    setEl("marginUsed",   fmtUSD(margin));
+    setEl("totalPnl",     (spotPnl >= 0 ? "+" : "") + fmtUSD(spotPnl),
+          spotPnl >= 0 ? "positive" : "negative");
+    setEl("totalTrades",  fills.length.toString());
+    setEl("winRate",      fmt(winRate, 1) + "%",
+          winRate >= 50 ? "positive" : "negative");
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  BEST TOP 3 TRADES
+  // ═══════════════════════════════════════════════════════════
+  const RANK_LABELS = ["🥇 Best Trade", "🥈 2nd Best", "🥉 3rd Best"];
+  const RANK_CLASSES = ["rank-1", "rank-2", "rank-3"];
+
+  function renderTop3(fills) {
+    const grid = document.getElementById("top3Grid");
+
+    // Only trades with actual closed PnL > 0
+    const winners = fills
+      .filter(f => parseFloat(f.closedPnl || 0) > 0)
+      .sort((a, b) => parseFloat(b.closedPnl) - parseFloat(a.closedPnl))
+      .slice(0, 3);
+
+    if (!winners.length) {
+      grid.innerHTML = `<div class="top3-empty">No realized winning trades found yet.</div>`;
+      return;
+    }
+
+    grid.innerHTML = winners.map((f, i) => {
+      const pnl      = parseFloat(f.closedPnl);
+      const coin     = displayCoin(f.coin);
+      const dir      = (f.dir || "").toLowerCase();
+      const isLong   = dir.includes("long");
+      const isShort  = dir.includes("short");
+      const dirBadge = f.dir
+        ? `<span class="dir-badge ${isLong ? "dir-long" : isShort ? "dir-short" : ""}">${f.dir}</span>`
+        : "";
+
+      return `
+        <div class="top3-card ${RANK_CLASSES[i]}">
+          <div class="top3-rank">${RANK_LABELS[i]}</div>
+          <div class="top3-coin-row">
+            <span class="coin-badge">${coin}</span>
+            ${dirBadge}
+          </div>
+          <div class="top3-pnl">+${fmtUSD(pnl)}</div>
+          <div class="top3-meta">
+            <span>Size: ${fmt(f.sz, 4)}</span>
+            <span>Price: ${fmtUSD(f.px)}</span>
+            <span>${fmtDateShort(f.time)}</span>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  RENDER TABLE
+  // ═══════════════════════════════════════════════════════════
+  function applyFilters() {
+    const search = document.getElementById("searchInput").value.toLowerCase();
+    const side   = document.getElementById("sideFilter").value;
+
+    filtered = allFills.filter(f => {
+      const name      = displayCoin(f.coin).toLowerCase();
+      const coinMatch = !search || name.includes(search) || f.coin.toLowerCase().includes(search);
+      const sideMatch = !side   || f.side === side;
+      return coinMatch && sideMatch;
+    });
+
+    filtered.sort((a, b) => {
+      let av = a[sortKey], bv = b[sortKey];
+      if (!isNaN(parseFloat(av))) { av = parseFloat(av); bv = parseFloat(bv); }
+      if (av < bv) return sortDir === "asc" ? -1 :  1;
+      if (av > bv) return sortDir === "asc" ?  1 : -1;
+      return 0;
+    });
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  function sortTable(key) {
+    if (sortKey === key) {
+      sortDir = sortDir === "asc" ? "desc" : "asc";
+    } else {
+      sortKey = key;
+      sortDir = key === "time" ? "desc" : "asc";
+    }
+    document.querySelectorAll("th").forEach(th => th.classList.remove("sort-asc", "sort-desc"));
+    event.currentTarget.classList.add("sort-" + sortDir);
+    applyFilters();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById("tradeTableBody");
+    const limit = parseInt(document.getElementById("limitSelect").value);
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / limit));
+    if (currentPage > pages) currentPage = pages;
+    const start = (currentPage - 1) * limit;
+    const slice = filtered.slice(start, start + limit);
+
+    document.getElementById("tradeCount").textContent = total;
+
+    if (!slice.length) {
+      tbody.innerHTML = `<tr><td colspan="8">
+        <div class="table-placeholder">No trades found</div></td></tr>`;
+    } else {
+      tbody.innerHTML = slice.map(f => {
+        const pnl      = parseFloat(f.closedPnl || 0);
+        const pnlStr   = pnl === 0 ? "—" : (pnl > 0 ? "+" : "") + fmtUSD(pnl);
+        const pnlCls   = pnl > 0 ? "positive" : pnl < 0 ? "negative" : "";
+        const dir      = (f.dir || "").toLowerCase();
+        const isLong   = dir.includes("long");
+        const isShort  = dir.includes("short");
+        const dirBadge = f.dir
+          ? `<span class="dir-badge ${isLong ? "dir-long" : isShort ? "dir-short" : ""}">${f.dir}</span>`
+          : "—";
+        const sideStr  = f.side === "B"
+          ? '<span class="side-buy">BUY</span>'
+          : '<span class="side-sell">SELL</span>';
+
+        return `<tr>
+          <td>${fmtDate(f.time)}</td>
+          <td><span class="coin-badge">${displayCoin(f.coin)}</span></td>
+          <td>${dirBadge}</td>
+          <td>${sideStr}</td>
+          <td style="text-align:right">${fmt(f.sz, 4)}</td>
+          <td style="text-align:right">${fmtUSD(f.px)}</td>
+          <td style="text-align:right" class="${pnlCls}">${pnlStr}</td>
+          <td style="text-align:right;color:#64748b">${fmtUSD(f.fee)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    renderPagination(pages);
+  }
+
+  function renderPagination(pages) {
+    const pag = document.getElementById("pagination");
+    if (pages <= 1) { pag.innerHTML = ""; return; }
+
+    let html = `<span>Page ${currentPage} of ${pages}</span>`;
+    html += `<button class="page-btn" onclick="goPage(1)" ${currentPage===1?"disabled":""}>«</button>`;
+    html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?"disabled":""}>‹</button>`;
+
+    let lo = Math.max(1, currentPage - 2);
+    let hi = Math.min(pages, lo + 4);
+    lo = Math.max(1, hi - 4);
+    for (let p = lo; p <= hi; p++) {
+      html += `<button class="page-btn ${p===currentPage?"active":""}" onclick="goPage(${p})">${p}</button>`;
+    }
+
+    html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?"disabled":""}>›</button>`;
+    html += `<button class="page-btn" onclick="goPage(${pages})" ${currentPage===pages?"disabled":""}>»</button>`;
+    pag.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; renderTable(); }
+
+  // ═══════════════════════════════════════════════════════════
+  //  LOAD ALL
+  // ═══════════════════════════════════════════════════════════
+  async function loadAll() {
+    const btn  = document.getElementById("refreshBtn");
+    const icon = document.getElementById("refreshIcon");
+    btn.classList.add("loading");
+    btn.disabled = true;
+    icon.style.animation = "spin 0.7s linear infinite";
+    clearError();
+
+    try {
+      const [perpState, spotState, mids, fills] = await Promise.all([
+        fetchPerpState(),
+        fetchSpotState(),
+        fetchAllMids(),
+        fetchFills(),
+      ]);
+
+      allFills = Array.isArray(fills) ? fills : [];
+
+      renderStats(perpState, spotState, mids, allFills);
+      renderTop3(allFills);
+      applyFilters();
+
+      const now = new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+      });
+      document.getElementById("lastUpdated").textContent = "Updated at " + now;
+    } catch (err) {
+      console.error(err);
+      showError("Could not fetch data. Check if the wallet address is correct and CORS is not blocked. (" + err.message + ")");
+    } finally {
+      btn.classList.remove("loading");
+      btn.disabled = false;
+      icon.style.animation = "";
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  INIT
+  // ═══════════════════════════════════════════════════════════
+  document.getElementById("walletShort").textContent = shortAddr(WALLET_ADDRESS);
+  // loadAll() is called after successful login, not on page load
+  if (AUTO_REFRESH_SECONDS > 0) setInterval(() => {
+    // Only auto-refresh if logged in (overlay hidden)
+    if (document.getElementById("login-overlay").style.display === "none") loadAll();
+  }, AUTO_REFRESH_SECONDS * 1000);
+</script>
+</body>
+</html>
