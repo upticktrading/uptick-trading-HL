@@ -635,7 +635,7 @@
   // 2. Read-only session key private key:
   const DERIVE_SESSION_PRIVATE_KEY = "0xacd00ff0b9805bc9395290ddbee9a87f2ba0916f2f3e232f6eb7f0d47e92f75d";
 
-  const DERIVE_API = "https://api.derive.xyz";
+  const DERIVE_API = "https://api.lyra.finance";
 </script>
 <!-- ════════════════════════════════════════════════════════ -->
 
@@ -939,20 +939,29 @@
     banner.innerHTML = "🔄 &nbsp;Loading live Derive data…";
 
     try {
-      // Get all portfolios (wallet value, margin)
-      const portfolioRes = await derivePost("/private/get_all_portfolios");
-      const portfolios   = portfolioRes.result?.portfolios || [];
-      const portfolio    = portfolios[0] || {};
+      // Step 1: get subaccounts for this wallet
+      const subRes      = await derivePost("/private/get_subaccounts", { wallet: DERIVE_WALLET });
+      const subaccounts = subRes.result?.subaccounts || [];
 
-      const totalValue    = parseFloat(portfolio.total_value        || 0);
-      const availMargin   = parseFloat(portfolio.available_margin   || 0);
-      const optionsValue  = parseFloat(portfolio.options_value      || 0);
-      const unrealPnl     = parseFloat(portfolio.unrealized_pnl     || 0);
-      const netDelta      = parseFloat(portfolio.net_delta          || 0);
+      if (!subaccounts.length) throw new Error("No subaccounts found for this wallet.");
 
-      // Get open positions
-      const posRes    = await derivePost("/private/get_positions");
-      const positions = posRes.result?.positions || [];
+      const subId = subaccounts[0].subaccount_id;
+
+      // Step 2: get full subaccount detail (positions + collateral + margin)
+      const detailRes = await derivePost("/private/get_subaccount", { subaccount_id: subId });
+      const detail    = detailRes.result || {};
+
+      const positions  = detail.open_positions || detail.positions || [];
+      const collateral = detail.collaterals    || [];
+      const margin     = detail.margin_summary || detail.portfolio  || {};
+
+      // Compute total collateral value (USDC + any other assets at face value)
+      const totalCollateral = collateral.reduce((s, c) => s + parseFloat(c.usd_value || c.amount || 0), 0);
+      const availMargin     = parseFloat(margin.available_margin || margin.free_collateral || 0);
+      const optionsValue    = positions.reduce((s, p) => s + parseFloat(p.mark_value || 0), 0);
+      const unrealPnl       = positions.reduce((s, p) => s + parseFloat(p.unrealized_pnl || 0), 0);
+      const netDelta        = positions.reduce((s, p) => s + parseFloat(p.delta || 0), 0);
+      const totalValue      = totalCollateral || parseFloat(margin.equity || margin.total_value || 0);
 
       // Update stat cards
       const dSet = (id, val, cls = "") => {
@@ -983,7 +992,7 @@
 
     } catch (err) {
       console.error("Derive error:", err);
-      banner.innerHTML = "⚠ &nbsp;<strong>Derive API error:</strong> " + err.message;
+      banner.innerHTML = `⚠ &nbsp;<strong>Derive API error:</strong> ${err.message} — <small>Check console (F12) for details.</small>`;
       banner.style.borderColor = "#7f1d1d";
       banner.style.background  = "#1f1015";
       banner.style.color       = "#fca5a5";
