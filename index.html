@@ -1038,9 +1038,9 @@
       <div class="perf-stats-box">
         <div class="psb-title">Performance Summary</div>
         <div class="perf-stat-row" style="align-items:center;gap:8px">
-          <span class="perf-stat-label" style="flex:none">Starting Capital ($)</span>
+          <span class="perf-stat-label" style="flex:none">Total AUM ($)</span>
           <input id="perf-start-cap" type="number" min="1" step="1000"
-            placeholder="e.g. 10000"
+            placeholder="e.g. 275000"
             style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:6px;
                    color:#f1f5f9;padding:4px 8px;font-size:13px;text-align:right;width:0;min-width:0"
             oninput="if(window._lastFills)renderPerformance(window._lastFills,window._lastPerpState,window._lastSpotState,window._lastMids)" />
@@ -1652,38 +1652,32 @@
     const months = Object.keys(monthlyPnl).sort();
     if (!months.length) return;
 
-    // ── Estimate starting capital ──────────────────────────────
-    const ms          = (perpState && perpState.marginSummary) || {};
-    const perpVal     = parseFloat(ms.accountValue || 0);
-    const spotVal     = calcSpotValue(spotState, mids);
-    const totalNow    = perpVal + spotVal;
+    // ── Total PnL & AUM denominator ────────────────────────────
     const totalPnlVal = months.reduce((s, m) => s + monthlyPnl[m], 0);
-    // Store fills for re-render when user changes starting capital
+    // Store fills for re-render when user changes AUM input
     window._lastFills = fills;
-    // Starting capital: use user input if set, else estimate (current value minus realised PnL, floored at 20% of current)
-    const inputEl = document.getElementById("perf-start-cap");
+    // AUM = fixed denominator for all % calculations (default $275,000)
+    const inputEl  = document.getElementById("perf-start-cap");
     const inputVal = inputEl && parseFloat(inputEl.value);
-    const autoEstimate = Math.max(totalNow - totalPnlVal, totalNow * 0.20, 1000);
-    const startCap = (inputVal && inputVal > 0) ? inputVal : autoEstimate;
-    // Pre-fill the input with the auto-estimate if blank
-    if (inputEl && !inputEl.value) inputEl.value = Math.round(autoEstimate);
+    const fixedAUM = (inputVal && inputVal > 0) ? inputVal : 275000;
+    // Pre-fill the input with the default if blank
+    if (inputEl && !inputEl.value) inputEl.value = fixedAUM;
 
     // ── Build equity curve ────────────────────────────────────
     const equityLabels = ["Start"];
     const equityValues = [100];
-    let cumPnl = 0;
-    const monthlyRetPct = {};  // "YYYY-MM" -> %
+    let currentAUM = fixedAUM;   // AUM compounds month-to-month
+    const monthlyRetPct = {};    // "YYYY-MM" -> %
 
     for (const m of months) {
       const pnl = monthlyPnl[m];
-      // Return % for this month relative to capital at start of month
-      const capitalAtStart = startCap + cumPnl;
-      const retPct = capitalAtStart > 0 ? (pnl / capitalAtStart) * 100 : 0;
+      // Return % = monthly PnL / AUM at the START of this month
+      const retPct = (pnl / currentAUM) * 100;
       monthlyRetPct[m] = retPct;
 
-      cumPnl += pnl;
-      const portfolioVal = startCap + cumPnl;
-      equityValues.push((portfolioVal / startCap) * 100);
+      currentAUM += pnl;  // AUM grows (or shrinks) with each month's PnL
+      // Equity curve indexed to 100 at start
+      equityValues.push((currentAUM / fixedAUM) * 100);
 
       const [y, mo] = m.split("-");
       const date    = new Date(parseInt(y), parseInt(mo) - 1, 1);
