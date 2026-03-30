@@ -530,8 +530,146 @@
       font-size: 11px;
     }
 
-    .tab-icon.hl  { background: linear-gradient(135deg, #4ade80, #22d3ee); }
-    .tab-icon.drv { background: linear-gradient(135deg, #a78bfa, #818cf8); }
+    .tab-icon.hl   { background: linear-gradient(135deg, #4ade80, #22d3ee); }
+    .tab-icon.drv  { background: linear-gradient(135deg, #a78bfa, #818cf8); }
+    .tab-icon.perf { background: linear-gradient(135deg, #fb923c, #f59e0b); }
+
+    /* ── PERFORMANCE TAB ───────────────────────────────────── */
+    .perf-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 900px) {
+      .perf-grid { grid-template-columns: 1fr; }
+    }
+
+    .perf-chart-box {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .perf-chart-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .perf-chart-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    .perf-stats-box {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .perf-stats-box .psb-title {
+      padding: 16px 20px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #f1f5f9;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .perf-stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 20px;
+      border-bottom: 1px solid #1a2235;
+    }
+
+    .perf-stat-row:last-child { border-bottom: none; }
+
+    .perf-stat-label {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .perf-stat-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Monthly returns table */
+    .monthly-wrap {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+
+    .monthly-title {
+      padding: 16px 20px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #f1f5f9;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .monthly-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .monthly-table th {
+      padding: 10px 12px;
+      background: #0f172a;
+      color: #64748b;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      text-align: center;
+      border-bottom: 1px solid #1e293b;
+      cursor: default;
+    }
+
+    .monthly-table th:first-child { text-align: left; }
+
+    .monthly-table td {
+      padding: 9px 12px;
+      text-align: center;
+      border-top: 1px solid #1a2235;
+      color: #cbd5e1;
+    }
+
+    .monthly-table td:first-child {
+      text-align: left;
+      font-weight: 700;
+      color: #f59e0b;
+      background: #1a1407;
+      border-right: 1px solid #1e293b;
+    }
+
+    .monthly-table td.ytd-cell {
+      font-weight: 700;
+      background: #0f172a;
+      border-left: 1px solid #1e293b;
+    }
+
+    .monthly-table td.ann-cell {
+      font-weight: 700;
+      background: #0f172a;
+      color: #94a3b8;
+    }
+
+    .monthly-table .pos-ret { color: #4ade80; }
+    .monthly-table .neg-ret { color: #f87171; }
+    .monthly-table .empty-cell { color: #334155; }
 
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
@@ -617,6 +755,8 @@
 
 <!-- Load ethers.js for Derive request signing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<!-- Chart.js for Performance charts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <!-- ════════════════════════════════════════════════════════
      ⚙️  CONFIG  —  change your wallet addresses below
@@ -683,6 +823,10 @@
   <button class="tab-btn" onclick="switchTab('drv')">
     <span class="tab-icon drv">◈</span>
     Derive.xyz
+  </button>
+  <button class="tab-btn" onclick="switchTab('perf')">
+    <span class="tab-icon perf">📈</span>
+    Performance
   </button>
 </nav>
 
@@ -878,6 +1022,80 @@
 
   </div> <!-- /tab-drv -->
 
+  <!-- ══════════════════════════════════════════════════════
+       PERFORMANCE TAB
+  ══════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-perf">
+
+    <!-- Chart + Stats side by side -->
+    <div class="perf-grid">
+      <div class="perf-chart-box">
+        <div class="perf-chart-title">Equity Curve</div>
+        <div class="perf-chart-sub">Indexed to 100 at inception · based on realized closed PnL</div>
+        <canvas id="perfChart" height="220"></canvas>
+      </div>
+
+      <div class="perf-stats-box">
+        <div class="psb-title">Performance Summary</div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Return Since Inception</span>
+          <span class="perf-stat-value" id="perf-inception">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Avg Monthly Return</span>
+          <span class="perf-stat-value" id="perf-avg-monthly">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">2025 YTD Return</span>
+          <span class="perf-stat-value" id="perf-ytd-2025">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">2026 YTD Return</span>
+          <span class="perf-stat-value" id="perf-ytd-2026">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Best Month</span>
+          <span class="perf-stat-value" id="perf-best-month">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Worst Month</span>
+          <span class="perf-stat-value" id="perf-worst-month">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Max Drawdown</span>
+          <span class="perf-stat-value" id="perf-max-dd">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Total Closed PnL</span>
+          <span class="perf-stat-value" id="perf-total-pnl">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Returns Table -->
+    <div class="monthly-wrap">
+      <div class="monthly-title">Monthly Returns (Closed PnL %)</div>
+      <div style="overflow-x:auto">
+        <table class="monthly-table" id="monthly-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th>
+              <th>May</th><th>Jun</th><th>Jul</th><th>Aug</th>
+              <th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+              <th>YTD</th><th>Ann.*</th>
+            </tr>
+          </thead>
+          <tbody id="monthly-table-body">
+            <tr><td colspan="15"><div class="table-placeholder">Loading performance data…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:10px 20px;font-size:11px;color:#475569">* Annualised = compounded from months with data</div>
+    </div>
+
+  </div> <!-- /tab-perf -->
+
 </main>
 
 <footer>
@@ -894,6 +1112,10 @@
     document.getElementById("tab-" + id).classList.add("active");
     event.currentTarget.classList.add("active");
     if (id === "drv") loadDerive();
+    // Performance tab: re-render chart (Canvas needs redraw after display:none→block)
+    if (id === "perf" && allFills.length) {
+      setTimeout(() => renderPerformance(allFills, window._lastPerpState, window._lastSpotState, window._lastMids), 50);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -1377,10 +1599,14 @@
       ]);
 
       allFills = Array.isArray(fills) ? fills : [];
+      window._lastPerpState = perpState;
+      window._lastSpotState = spotState;
+      window._lastMids      = mids;
 
       renderStats(perpState, spotState, mids, allFills);
       renderTop3(allFills);
       applyFilters();
+      renderPerformance(allFills, perpState, spotState, mids);
 
       const now = new Date().toLocaleTimeString("en-US", {
         hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
@@ -1394,6 +1620,192 @@
       btn.disabled = false;
       icon.style.animation = "";
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  PERFORMANCE TAB
+  // ═══════════════════════════════════════════════════════════
+  let perfChartInstance = null;
+
+  function renderPerformance(fills, perpState, spotState, mids) {
+    if (!fills || !fills.length) return;
+
+    // Sort fills ascending by time
+    const sortedFills = [...fills].sort((a, b) => a.time - b.time);
+
+    // ── Build monthly PnL map ──────────────────────────────────
+    const monthlyPnl = {};  // "YYYY-MM" -> $pnl
+    for (const f of sortedFills) {
+      const d   = new Date(f.time);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthlyPnl[key] = (monthlyPnl[key] || 0) + parseFloat(f.closedPnl || 0);
+    }
+
+    const months = Object.keys(monthlyPnl).sort();
+    if (!months.length) return;
+
+    // ── Estimate starting capital ──────────────────────────────
+    const ms          = (perpState && perpState.marginSummary) || {};
+    const perpVal     = parseFloat(ms.accountValue || 0);
+    const spotVal     = calcSpotValue(spotState, mids);
+    const totalNow    = perpVal + spotVal;
+    const totalPnlVal = months.reduce((s, m) => s + monthlyPnl[m], 0);
+    // Starting capital = current value minus all realised gains
+    const startCap    = Math.max(totalNow - totalPnlVal, 5000);
+
+    // ── Build equity curve ────────────────────────────────────
+    const equityLabels = ["Start"];
+    const equityValues = [100];
+    let cumPnl = 0;
+    const monthlyRetPct = {};  // "YYYY-MM" -> %
+
+    for (const m of months) {
+      const pnl = monthlyPnl[m];
+      // Return % for this month relative to capital at start of month
+      const capitalAtStart = startCap + cumPnl;
+      const retPct = capitalAtStart > 0 ? (pnl / capitalAtStart) * 100 : 0;
+      monthlyRetPct[m] = retPct;
+
+      cumPnl += pnl;
+      const portfolioVal = startCap + cumPnl;
+      equityValues.push((portfolioVal / startCap) * 100);
+
+      const [y, mo] = m.split("-");
+      const date    = new Date(parseInt(y), parseInt(mo) - 1, 1);
+      equityLabels.push(date.toLocaleDateString("en-US", { month: "short", year: "2-digit" }).replace(" ", "-"));
+    }
+
+    // ── Summary Stats ──────────────────────────────────────────
+    const inceptionRet   = equityValues[equityValues.length - 1] - 100;
+    const monthlyPcts    = months.map(m => monthlyRetPct[m]);
+    const avgMonthly     = monthlyPcts.reduce((s, v) => s + v, 0) / (monthlyPcts.length || 1);
+
+    // YTD per year (compound)
+    const ytdByYear = {};
+    for (const m of months) {
+      const yr = m.split("-")[0];
+      ytdByYear[yr] = (ytdByYear[yr] || 0);
+      // Compound: (1 + prev) * (1 + retPct/100) - 1
+      ytdByYear[yr] = (1 + ytdByYear[yr] / 100) * (1 + monthlyRetPct[m] / 100) * 100 - 100;
+    }
+
+    // Best/worst months
+    const best  = Math.max(...monthlyPcts);
+    const worst = Math.min(...monthlyPcts);
+    const bestMonth  = months[monthlyPcts.indexOf(best)];
+    const worstMonth = months[monthlyPcts.indexOf(worst)];
+
+    // Max drawdown on equity curve
+    let peak = 100, maxDD = 0;
+    for (const v of equityValues) {
+      if (v > peak) peak = v;
+      const dd = (v - peak) / peak * 100;
+      if (dd < maxDD) maxDD = dd;
+    }
+
+    // ── Update stat elements ───────────────────────────────────
+    const fPct = (v, plus = true) => (plus && v > 0 ? "+" : "") + v.toFixed(2) + "%";
+    const fMonth = (key) => {
+      if (!key) return "—";
+      const [y, mo] = key.split("-");
+      return new Date(parseInt(y), parseInt(mo) - 1, 1)
+        .toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    };
+
+    const setPerf = (id, val, cls = "") => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val;
+      el.className   = "perf-stat-value" + (cls ? " " + cls : "");
+    };
+
+    setPerf("perf-inception",   fPct(inceptionRet),  inceptionRet  >= 0 ? "positive" : "negative");
+    setPerf("perf-avg-monthly", fPct(avgMonthly),     avgMonthly    >= 0 ? "positive" : "negative");
+    setPerf("perf-ytd-2025",    ytdByYear["2025"] !== undefined ? fPct(ytdByYear["2025"]) : "—",
+            ytdByYear["2025"] >= 0 ? "positive" : "negative");
+    setPerf("perf-ytd-2026",    ytdByYear["2026"] !== undefined ? fPct(ytdByYear["2026"]) : "—",
+            ytdByYear["2026"] >= 0 ? "positive" : "negative");
+    setPerf("perf-best-month",  fPct(best) + " (" + fMonth(bestMonth) + ")",  "positive");
+    setPerf("perf-worst-month", fPct(worst) + " (" + fMonth(worstMonth) + ")", "negative");
+    setPerf("perf-max-dd",      fPct(maxDD, false),  "negative");
+    setPerf("perf-total-pnl",   (totalPnlVal >= 0 ? "+" : "") + fmtUSD(totalPnlVal),
+            totalPnlVal >= 0 ? "positive" : "negative");
+
+    // ── Render Chart ───────────────────────────────────────────
+    const canvas = document.getElementById("perfChart");
+    if (perfChartInstance) { perfChartInstance.destroy(); }
+
+    perfChartInstance = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: equityLabels,
+        datasets: [{
+          label: "Equity (indexed 100)",
+          data: equityValues,
+          fill: true,
+          backgroundColor: "rgba(251, 146, 60, 0.18)",
+          borderColor: "#fb923c",
+          borderWidth: 2,
+          pointRadius: equityValues.length > 30 ? 0 : 4,
+          pointBackgroundColor: "#fb923c",
+          tension: 0.35,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => " " + ctx.parsed.y.toFixed(2)
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#64748b", font: { size: 11 } },
+            grid:  { color: "#1e293b" }
+          },
+          y: {
+            ticks: { color: "#64748b", font: { size: 11 },
+                     callback: v => v.toFixed(0) },
+            grid:  { color: "#1e293b" }
+          }
+        }
+      }
+    });
+
+    // ── Monthly Returns Table ──────────────────────────────────
+    const years = [...new Set(months.map(m => m.split("-")[0]))].sort();
+    const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    const tbody = document.getElementById("monthly-table-body");
+    tbody.innerHTML = years.map(year => {
+      let ytdCompound = 0;
+      const cells = MONTH_NAMES.map((_, i) => {
+        const key = `${year}-${String(i + 1).padStart(2, "0")}`;
+        if (monthlyRetPct[key] === undefined) return `<td class="empty-cell">—</td>`;
+        const v = monthlyRetPct[key];
+        ytdCompound = (1 + ytdCompound / 100) * (1 + v / 100) * 100 - 100;
+        const cls = v > 0 ? "pos-ret" : v < 0 ? "neg-ret" : "";
+        return `<td class="${cls}">${(v > 0 ? "+" : "") + v.toFixed(2)}%</td>`;
+      }).join("");
+
+      // Annualised from months present
+      const yearMonths    = months.filter(m => m.startsWith(year));
+      const annualisedRaw = yearMonths.length > 0
+        ? (Math.pow(1 + ytdCompound / 100, 12 / yearMonths.length) - 1) * 100
+        : 0;
+      const ytdCls = ytdCompound > 0 ? "pos-ret" : ytdCompound < 0 ? "neg-ret" : "";
+      const annCls = annualisedRaw > 0 ? "pos-ret" : annualisedRaw < 0 ? "neg-ret" : "";
+
+      return `<tr>
+        <td>${year}</td>
+        ${cells}
+        <td class="ytd-cell ${ytdCls}">${(ytdCompound > 0 ? "+" : "") + ytdCompound.toFixed(2)}%</td>
+        <td class="ann-cell ${annCls}">${(annualisedRaw > 0 ? "+" : "") + annualisedRaw.toFixed(1)}%*</td>
+      </tr>`;
+    }).join("");
   }
 
   // ═══════════════════════════════════════════════════════════
