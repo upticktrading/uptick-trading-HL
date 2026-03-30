@@ -1037,6 +1037,14 @@
 
       <div class="perf-stats-box">
         <div class="psb-title">Performance Summary</div>
+        <div class="perf-stat-row" style="align-items:center;gap:8px">
+          <span class="perf-stat-label" style="flex:none">Starting Capital ($)</span>
+          <input id="perf-start-cap" type="number" min="1" step="1000"
+            placeholder="e.g. 10000"
+            style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:6px;
+                   color:#f1f5f9;padding:4px 8px;font-size:13px;text-align:right;width:0;min-width:0"
+            oninput="if(window._lastFills)renderPerformance(window._lastFills,window._lastPerpState,window._lastSpotState,window._lastMids)" />
+        </div>
         <div class="perf-stat-row">
           <span class="perf-stat-label">Return Since Inception</span>
           <span class="perf-stat-value" id="perf-inception">—</span>
@@ -1650,8 +1658,15 @@
     const spotVal     = calcSpotValue(spotState, mids);
     const totalNow    = perpVal + spotVal;
     const totalPnlVal = months.reduce((s, m) => s + monthlyPnl[m], 0);
-    // Starting capital = current value minus all realised gains
-    const startCap    = Math.max(totalNow - totalPnlVal, 5000);
+    // Store fills for re-render when user changes starting capital
+    window._lastFills = fills;
+    // Starting capital: use user input if set, else estimate (current value minus realised PnL, floored at 20% of current)
+    const inputEl = document.getElementById("perf-start-cap");
+    const inputVal = inputEl && parseFloat(inputEl.value);
+    const autoEstimate = Math.max(totalNow - totalPnlVal, totalNow * 0.20, 1000);
+    const startCap = (inputVal && inputVal > 0) ? inputVal : autoEstimate;
+    // Pre-fill the input with the auto-estimate if blank
+    if (inputEl && !inputEl.value) inputEl.value = Math.round(autoEstimate);
 
     // ── Build equity curve ────────────────────────────────────
     const equityLabels = ["Start"];
