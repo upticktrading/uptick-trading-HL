@@ -1763,12 +1763,16 @@
     if (spotState && spotState.balances && mids) {
       for (const b of spotState.balances) {
         if (b.coin === "USDC" || b.coin === "USDT") continue;
-        const amount    = parseFloat(b.total || 0);
-        const entryNtl  = parseFloat(b.entryNtl || 0);
-        const tokenKey  = "@" + b.token;
-        const price     = parseFloat(mids[tokenKey] || mids[b.coin] || 0);
-        const curVal    = amount * price;
-        unrealSpot += curVal - entryNtl;
+        const amount   = parseFloat(b.total || 0);
+        const entryNtl = parseFloat(b.entryNtl || 0);
+        // Try coin name first (e.g. "HYPE" → 37.26), then strip leading U (UETH→ETH),
+        // then fall back to @token index key
+        const stripped = b.coin.startsWith("U") ? b.coin.slice(1) : null;
+        const price    = parseFloat(
+          mids[b.coin] || (stripped && mids[stripped]) || mids["@" + b.token] || 0
+        );
+        const curVal   = amount * price;
+        unrealSpot    += curVal - entryNtl;
       }
     }
     setPerf("perf-unreal-spot", (unrealSpot >= 0 ? "+" : "") + fmtUSD(unrealSpot),
