@@ -1077,6 +1077,14 @@
           <span class="perf-stat-label">Total Closed PnL</span>
           <span class="perf-stat-value" id="perf-total-pnl">—</span>
         </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Unrealized Perp PnL</span>
+          <span class="perf-stat-value" id="perf-unreal-perp">—</span>
+        </div>
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Unrealized Spot PnL</span>
+          <span class="perf-stat-value" id="perf-unreal-spot">—</span>
+        </div>
       </div>
     </div>
 
@@ -1739,6 +1747,32 @@
     setPerf("perf-max-dd",      fPct(maxDD, false),  "negative");
     setPerf("perf-total-pnl",   (totalPnlVal >= 0 ? "+" : "") + fmtUSD(totalPnlVal),
             totalPnlVal >= 0 ? "positive" : "negative");
+
+    // ── Unrealized Perp PnL (sum of open position unrealizedPnl) ──
+    let unrealPerp = 0;
+    if (perpState && perpState.assetPositions) {
+      for (const ap of perpState.assetPositions) {
+        unrealPerp += parseFloat((ap.position && ap.position.unrealizedPnl) || 0);
+      }
+    }
+    setPerf("perf-unreal-perp", (unrealPerp >= 0 ? "+" : "") + fmtUSD(unrealPerp),
+            unrealPerp >= 0 ? "positive" : "negative");
+
+    // ── Unrealized Spot PnL (current value minus entry notional) ──
+    let unrealSpot = 0;
+    if (spotState && spotState.balances && mids) {
+      for (const b of spotState.balances) {
+        if (b.coin === "USDC" || b.coin === "USDT") continue;
+        const amount    = parseFloat(b.total || 0);
+        const entryNtl  = parseFloat(b.entryNtl || 0);
+        const tokenKey  = "@" + b.token;
+        const price     = parseFloat(mids[tokenKey] || mids[b.coin] || 0);
+        const curVal    = amount * price;
+        unrealSpot += curVal - entryNtl;
+      }
+    }
+    setPerf("perf-unreal-spot", (unrealSpot >= 0 ? "+" : "") + fmtUSD(unrealSpot),
+            unrealSpot >= 0 ? "positive" : "negative");
 
     // ── Render Chart ───────────────────────────────────────────
     const canvas = document.getElementById("perfChart");
