@@ -767,6 +767,13 @@
   const AUTO_REFRESH_SECONDS = 60;
   const COIN_ALIASES = { "@107": "HYPE" };
 
+  // ── MANUAL P&L ADJUSTMENTS ───────────────────────────────
+  // Add external platform P&L here (options, other exchanges, etc.)
+  // Format: "YYYY-MM": amount in USD (positive = profit, negative = loss)
+  const MANUAL_PNL = {
+    "2026-03": 300,   // options on Derive, March 2026
+  };
+
   // ── DERIVE ───────────────────────────────────────────────
   // 1. Go to app.derive.xyz → Home → Developers → "Derive Wallet"
   //    and paste your Derive smart-contract wallet address here:
@@ -1657,6 +1664,11 @@
       monthlyPnl[key] = (monthlyPnl[key] || 0) + parseFloat(f.closedPnl || 0);
     }
 
+    // Add manual adjustments (other platforms)
+    for (const [key, amt] of Object.entries(MANUAL_PNL || {})) {
+      monthlyPnl[key] = (monthlyPnl[key] || 0) + amt;
+    }
+
     const months = Object.keys(monthlyPnl).sort();
     if (!months.length) return;
 
@@ -1667,7 +1679,7 @@
     // AUM = fixed denominator for all % calculations (default $275,000)
     const inputEl  = document.getElementById("perf-start-cap");
     const inputVal = inputEl && parseFloat(inputEl.value);
-    const fixedAUM = (inputVal && inputVal > 0) ? inputVal : 275000;
+    const fixedAUM = (inputVal && inputVal > 0) ? inputVal : 225000;
     // Pre-fill the input with the default if blank
     if (inputEl && !inputEl.value) inputEl.value = fixedAUM;
 
