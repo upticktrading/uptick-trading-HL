@@ -1044,13 +1044,9 @@
 
       <div class="perf-stats-box">
         <div class="psb-title">Performance Summary</div>
-        <div class="perf-stat-row" style="align-items:center;gap:8px">
-          <span class="perf-stat-label" style="flex:none">Total AUM ($)</span>
-          <input id="perf-start-cap" type="number" min="1" step="1000"
-            placeholder="e.g. 275000"
-            style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:6px;
-                   color:#f1f5f9;padding:4px 8px;font-size:13px;text-align:right;width:0;min-width:0"
-            oninput="if(window._lastFills)renderPerformance(window._lastFills,window._lastPerpState,window._lastSpotState,window._lastMids)" />
+        <div class="perf-stat-row">
+          <span class="perf-stat-label">Total AUM</span>
+          <span class="perf-stat-value" id="perf-start-cap-display">$205,300</span>
         </div>
         <div class="perf-stat-row">
           <span class="perf-stat-label">Return Since Inception</span>
@@ -1674,14 +1670,8 @@
 
     // ── Total PnL & AUM denominator ────────────────────────────
     const totalPnlVal = months.reduce((s, m) => s + monthlyPnl[m], 0);
-    // Store fills for re-render when user changes AUM input
-    window._lastFills = fills;
-    // AUM = fixed denominator for all % calculations (default $275,000)
-    const inputEl  = document.getElementById("perf-start-cap");
-    const inputVal = inputEl && parseFloat(inputEl.value);
-    const fixedAUM = (inputVal && inputVal > 0) ? inputVal : 225000;
-    // Pre-fill the input with the default if blank
-    if (inputEl && !inputEl.value) inputEl.value = fixedAUM;
+    // Fixed AUM = total deposited on HL (Sep $100,100 + Oct $74,971 + Jan $30,229)
+    const fixedAUM = 205300;
 
     // ── Build equity curve ────────────────────────────────────
     const equityLabels = ["Start"];
