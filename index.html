@@ -1039,7 +1039,7 @@
       <div class="perf-chart-box">
         <div class="perf-chart-title">Equity Curve</div>
         <div class="perf-chart-sub">Indexed to 100 at inception · based on realized closed PnL</div>
-        <canvas id="perfChart" height="220"></canvas>
+        <canvas id="perfChart" height="150"></canvas>
       </div>
 
       <div class="perf-stats-box">
@@ -1826,6 +1826,8 @@
             grid:  { color: "#1e293b" }
           },
           y: {
+            min: 98,
+            max: 150,
             ticks: { color: "#64748b", font: { size: 11 },
                      callback: v => v.toFixed(0) },
             grid:  { color: "#1e293b" }
